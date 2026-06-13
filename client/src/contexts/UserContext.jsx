@@ -30,8 +30,20 @@ export const UserProvider = ({ children }) => {
     try {
       setError(null);
       const response = await authApi.login(username, password);
-      setUser(new User(response.user.id, response.user.username));
-      return true;
+
+      if (response?.user?.id && response?.user?.username) {
+        setUser(new User(response.user.id, response.user.username));
+        return true;
+      }
+
+      // Fallback: verify session and fetch current user from auth status.
+      const status = await authApi.getAuthStatus();
+      if (status?.authenticated && status?.user?.id && status?.user?.username) {
+        setUser(new User(status.user.id, status.user.username));
+        return true;
+      }
+
+      throw new Error('Login succeeded but user session could not be confirmed');
     } catch (err) {
       setError(err.message);
       throw err;

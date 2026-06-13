@@ -1,11 +1,9 @@
 // Data Access Object - all database operations
 import { getDatabase } from './db.js';
-import { getRandomEvent as getRandomEventDb } from './db.js';
-
-const db = getDatabase();
 
 // User operations
 export async function getUserByUsername(username) {
+  const db = getDatabase();
   return new Promise((resolve, reject) => {
     db.get('SELECT * FROM users WHERE username = ?', [username], (err, row) => {
       if (err) reject(err);
@@ -15,6 +13,7 @@ export async function getUserByUsername(username) {
 }
 
 export async function getUserById(id) {
+  const db = getDatabase();
   return new Promise((resolve, reject) => {
     db.get('SELECT id, username FROM users WHERE id = ?', [id], (err, row) => {
       if (err) reject(err);
@@ -25,6 +24,7 @@ export async function getUserById(id) {
 
 // Network operations
 export async function getNetwork() {
+  const db = getDatabase();
   return new Promise((resolve, reject) => {
     const queries = {
       lines: new Promise((res, rej) => {
@@ -63,6 +63,7 @@ export async function getNetwork() {
 }
 
 export async function getAllStations() {
+  const db = getDatabase();
   return new Promise((resolve, reject) => {
     db.all('SELECT * FROM stations', (err, rows) => {
       if (err) reject(err);
@@ -73,6 +74,7 @@ export async function getAllStations() {
 
 // Game operations
 export async function createGame(userId, startStationId, destinationStationId) {
+  const db = getDatabase();
   return new Promise((resolve, reject) => {
     db.run(
       'INSERT INTO games (user_id, start_station_id, destination_station_id) VALUES (?, ?, ?)',
@@ -86,6 +88,7 @@ export async function createGame(userId, startStationId, destinationStationId) {
 }
 
 export async function getGameById(gameId) {
+  const db = getDatabase();
   return new Promise((resolve, reject) => {
     db.get('SELECT * FROM games WHERE id = ?', [gameId], (err, row) => {
       if (err) reject(err);
@@ -95,6 +98,7 @@ export async function getGameById(gameId) {
 }
 
 export async function updateGameResult(gameId, route, isValid, finalScore) {
+  const db = getDatabase();
   return new Promise((resolve, reject) => {
     db.run(
       'UPDATE games SET submitted_route = ?, is_valid = ?, final_score = ? WHERE id = ?',
@@ -115,6 +119,7 @@ export async function saveGameSegment(
   coinsBefore,
   coinsAfter
 ) {
+  const db = getDatabase();
   return new Promise((resolve, reject) => {
     db.run(
       'INSERT INTO game_segments (game_id, segment_sequence, segment_id, event_id, coins_before, coins_after) VALUES (?, ?, ?, ?, ?, ?)',
@@ -129,6 +134,7 @@ export async function saveGameSegment(
 
 // Segment operations
 export async function getSegmentById(id) {
+  const db = getDatabase();
   return new Promise((resolve, reject) => {
     db.get('SELECT * FROM segments WHERE id = ?', [id], (err, row) => {
       if (err) reject(err);
@@ -138,6 +144,7 @@ export async function getSegmentById(id) {
 }
 
 export async function getAllSegments() {
+  const db = getDatabase();
   return new Promise((resolve, reject) => {
     db.all('SELECT * FROM segments', (err, rows) => {
       if (err) reject(err);
@@ -148,6 +155,7 @@ export async function getAllSegments() {
 
 // Event operations
 export async function getRandomEvent() {
+  const db = getDatabase();
   return new Promise((resolve, reject) => {
     db.get('SELECT * FROM events ORDER BY RANDOM() LIMIT 1', (err, row) => {
       if (err) reject(err);
@@ -158,6 +166,7 @@ export async function getRandomEvent() {
 
 // Rankings operations
 export async function getUserRankings() {
+  const db = getDatabase();
   return new Promise((resolve, reject) => {
     db.all(
       `SELECT
@@ -180,6 +189,7 @@ export async function getUserRankings() {
 
 // Utility for getting adjacent stations (for pathfinding)
 export async function getAdjacentStations(stationId) {
+  const db = getDatabase();
   return new Promise((resolve, reject) => {
     db.all(
       `SELECT DISTINCT CASE
@@ -198,6 +208,7 @@ export async function getAdjacentStations(stationId) {
 }
 
 export async function getSegmentConnections(stationId) {
+  const db = getDatabase();
   return new Promise((resolve, reject) => {
     db.all(
       `SELECT DISTINCT seg.line_id FROM segments seg
