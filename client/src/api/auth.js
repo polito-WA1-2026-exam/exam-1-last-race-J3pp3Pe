@@ -3,30 +3,18 @@
 const AUTH_BASE = 'http://localhost:3001/auth';
 
 export async function login(username, password) {
-  try {
-    const response = await fetch(`${AUTH_BASE}/login`, {
-      method: 'POST',
-      body: JSON.stringify({ username, password }),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-    });
+  const response = await fetch(`${AUTH_BASE}/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+    credentials: 'include',
+  });
 
-    if (!response.ok) {
-      throw new Error(`Login failed with status ${response.status}`);
-    }
-
-    const contentType = response.headers.get('content-type') || '';
-    if (contentType.includes('application/json')) {
-      return await response.json();
-    }
-
-    // Some backends can return 200 with an empty/non-JSON body on successful auth.
-    return {};
-  } catch (error) {
-    throw new Error(error?.message || 'Network error during login', { cause: error });
+  if (!response.ok) {
+    throw new Error('Wrong username or password');
   }
+
+  return response.json();
 }
 
 export async function logout() {

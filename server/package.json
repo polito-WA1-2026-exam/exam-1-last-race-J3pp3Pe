@@ -8,6 +8,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
+    "seed": "node seedDatabase.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {

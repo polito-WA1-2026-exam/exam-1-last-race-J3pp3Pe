@@ -54,7 +54,7 @@ export default function InstructionsPage() {
             <div className="mb-4">
               <h5>💰 Scoring</h5>
               <p>Your score = coins remaining at the end.</p>
-              <p>Random events give or take coins (from -3 to +3 per segment).</p>
+              <p>Random events give or take coins (from -4 to +4 per segment).</p>
               <p>Final negative scores are displayed as 0.</p>
             </div>
 

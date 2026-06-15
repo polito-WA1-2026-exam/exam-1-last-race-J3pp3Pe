@@ -1,7 +1,6 @@
 import sqlite3 from 'sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import bcryptjs from 'bcryptjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dbPath = path.join(__dirname, 'game.db');
@@ -159,183 +158,12 @@ export async function initDatabase() {
           'CREATE INDEX idx_segments_stations ON segments(station_a_id, station_b_id)'
         );
         await promiseDbRun('CREATE INDEX idx_line_stations_line ON line_stations(line_id)');
-
-        await seedDatabase();
         resolve();
       } catch (error) {
         reject(error);
       }
     });
   });
-}
-
-async function seedDatabase() {
-  // Seed users (3 users, 2 with game history)
-  const hash1 = bcryptjs.hashSync('password1', 10);
-  const hash2 = bcryptjs.hashSync('password2', 10);
-  const hash3 = bcryptjs.hashSync('password3', 10);
-
-  await promiseDbRun('INSERT INTO users (username, password_hash) VALUES (?, ?)', [
-    'alice',
-    hash1,
-  ]);
-  await promiseDbRun('INSERT INTO users (username, password_hash) VALUES (?, ?)', [
-    'bob',
-    hash2,
-  ]);
-  await promiseDbRun('INSERT INTO users (username, password_hash) VALUES (?, ?)', [
-    'charlie',
-    hash3,
-  ]);
-
-  // Seed metro lines
-  const lines = [
-    { name: 'Red Line', color: '#E60000' },
-    { name: 'Green Line', color: '#00AA44' },
-    { name: 'Blue Line', color: '#0066CC' },
-    { name: 'Yellow Line', color: '#FFCC00' },
-    { name: 'Purple Line', color: '#9933CC' },
-  ];
-
-  const lineIds = {};
-  for (const line of lines) {
-    const result = await promiseDbRun('INSERT INTO lines (name, color) VALUES (?, ?)', [
-      line.name,
-      line.color,
-    ]);
-    lineIds[line.name] = result.lastID;
-  }
-
-  // Seed stations (Gothenburg stations)
-  const stations = [
-    { name: 'Centralen', x: 300, y: 250 },
-    { name: 'Korsvägen', x: 200, y: 150 },
-    { name: 'Hjalmar Brantingsplatsen', x: 400, y: 350 },
-    { name: 'Scaniabadet', x: 100, y: 100 },
-    { name: 'Ekmanska', x: 150, y: 200 },
-    { name: 'Seminariegatan', x: 250, y: 50 },
-    { name: 'Grönsakstorget', x: 400, y: 100 },
-    { name: 'Marklandsgatan', x: 350, y: 400 },
-    { name: 'Vasa Viktoria', x: 50, y: 300 },
-    { name: 'Kapellplatsen', x: 500, y: 200 },
-    { name: 'Järntorget', x: 200, y: 450 },
-    { name: 'Chalmers', x: 450, y: 500 },
-    { name: 'Valand', x: 300, y: 550 },
-  ];
-
-  const stationIds = {};
-  for (const station of stations) {
-    const result = await promiseDbRun('INSERT INTO stations (name, x, y) VALUES (?, ?, ?)', [
-      station.name,
-      station.x,
-      station.y,
-    ]);
-    stationIds[station.name] = result.lastID;
-  }
-
-  // Define metro connections per line
-  const lineConnections = {
-    'Red Line': [
-      'Marklandsgatan',
-      'Hjalmar Brantingsplatsen',
-      'Centralen',
-      'Korsvägen',
-      'Scaniabadet',
-    ],
-    'Green Line': ['Scaniabadet', 'Ekmanska', 'Centralen', 'Vasa Viktoria'],
-    'Blue Line': [
-      'Seminariegatan',
-      'Grönsakstorget',
-      'Hjalmar Brantingsplatsen',
-      'Kapellplatsen',
-    ],
-    'Yellow Line': ['Korsvägen', 'Grönsakstorget', 'Järntorget', 'Valand'],
-    'Purple Line': [
-      'Hjalmar Brantingsplatsen',
-      'Valand',
-      'Chalmers',
-      'Vasa Viktoria',
-    ],
-  };
-
-  // Create segments for each line
-  for (const [lineName, stationNames] of Object.entries(lineConnections)) {
-    const lineId = lineIds[lineName];
-
-    // Add line_stations associations
-    for (let i = 0; i < stationNames.length; i++) {
-      const stationName = stationNames[i];
-      const stationId = stationIds[stationName];
-      await promiseDbRun(
-        'INSERT INTO line_stations (line_id, station_id, order_pos) VALUES (?, ?, ?)',
-        [lineId, stationId, i]
-      );
-    }
-
-    // Create segments between consecutive stations
-    for (let i = 0; i < stationNames.length - 1; i++) {
-      const stationAId = stationIds[stationNames[i]];
-      const stationBId = stationIds[stationNames[i + 1]];
-
-      // Insert bidirectional segments
-      await promiseDbRun(
-        'INSERT INTO segments (station_a_id, station_b_id, line_id) VALUES (?, ?, ?)',
-        [stationAId, stationBId, lineId]
-      );
-
-      await promiseDbRun(
-        'INSERT INTO segments (station_a_id, station_b_id, line_id) VALUES (?, ?, ?)',
-        [stationBId, stationAId, lineId]
-      );
-    }
-  }
-
-  // Seed events (at least 8)
-  const events = [
-    { description: 'Quiet journey', coin_effect: 0 },
-    { description: 'Wrong platform', coin_effect: -2 },
-    { description: 'Kind passenger offers help', coin_effect: 1 },
-    { description: 'Found dropped coins', coin_effect: 2 },
-    { description: 'Door malfunction delay', coin_effect: -1 },
-    { description: 'Tourist asks for directions', coin_effect: 0 },
-    { description: 'Unexpected service interruption', coin_effect: -3 },
-    { description: 'Lucky draw winners announcement', coin_effect: 3 },
-    { description: 'Station maintenance noise', coin_effect: -1 },
-  ];
-
-  for (const event of events) {
-    await promiseDbRun(
-      'INSERT INTO events (description, coin_effect) VALUES (?, ?)',
-      [event.description, event.coin_effect]
-    );
-  }
-
-  // Seed games for users alice and bob
-  const alice = await promiseDbGet('SELECT id FROM users WHERE username = ?', ['alice']);
-  const bob = await promiseDbGet('SELECT id FROM users WHERE username = ?', ['bob']);
-
-  const aliceId = alice.id;
-  const bobId = bob.id;
-
-  // Sample game for alice
-  await promiseDbRun(
-    'INSERT INTO games (user_id, start_station_id, destination_station_id, is_valid, final_score) VALUES (?, ?, ?, ?, ?)',
-    [aliceId, stationIds['Centralen'], stationIds['Scaniabadet'], 1, 18]
-  );
-
-  // Sample game for bob
-  await promiseDbRun(
-    'INSERT INTO games (user_id, start_station_id, destination_station_id, is_valid, final_score) VALUES (?, ?, ?, ?, ?)',
-    [bobId, stationIds['Korsvägen'], stationIds['Valand'], 1, 22]
-  );
-
-  // Add another game for bob (higher score)
-  await promiseDbRun(
-    'INSERT INTO games (user_id, start_station_id, destination_station_id, is_valid, final_score) VALUES (?, ?, ?, ?, ?)',
-    [bobId, stationIds['Marklandsgatan'], stationIds['Chalmers'], 1, 25]
-  );
-
-  console.log('Database initialized and seeded');
 }
 
 

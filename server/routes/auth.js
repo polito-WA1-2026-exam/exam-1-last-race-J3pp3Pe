@@ -6,42 +6,7 @@ const router = Router();
 
 /**
  * @swagger
- * /auth/login:
- *   post:
- *     summary: Login user
- *     description: Authenticate with username and password, returns session cookie
- *     tags: [Authentication]
- *     security: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               username:
- *                 type: string
- *                 example: alice
- *               password:
- *                 type: string
- *                 example: password1
- *             required:
- *               - username
- *               - password
- *     responses:
- *       200:
- *         description: Login successful
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 user:
- *                   $ref: '#/components/schemas/User'
- *       400:
- *         description: Invalid credentials or already authenticated
+ * POST /auth/login:
  */
 router.post('/login', isNotAuthenticated, passport.authenticate('local'), (req, res) => {
   res.json({
@@ -52,23 +17,7 @@ router.post('/login', isNotAuthenticated, passport.authenticate('local'), (req, 
 
 /**
  * @swagger
- * /auth/logout:
- *   post:
- *     summary: Logout user
- *     description: Destroy session and logout
- *     tags: [Authentication]
- *     responses:
- *       200:
- *         description: Logout successful
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *       500:
- *         description: Logout failed
+ * POST /auth/logout:
  */
 router.post('/logout', isAuthenticated, (req, res) => {
   req.logout((err) => {
@@ -81,24 +30,7 @@ router.post('/logout', isAuthenticated, (req, res) => {
 
 /**
  * @swagger
- * /auth/status:
- *   get:
- *     summary: Check authentication status
- *     description: Returns current authentication status and user info if authenticated
- *     tags: [Authentication]
- *     security: []
- *     responses:
- *       200:
- *         description: Authentication status
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 authenticated:
- *                   type: boolean
- *                 user:
- *                   $ref: '#/components/schemas/User'
+ * GET /auth/status:
  */
 router.get('/status', (req, res) => {
   if (req.isAuthenticated()) {
