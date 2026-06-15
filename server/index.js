@@ -8,9 +8,10 @@ import bcryptjs from 'bcryptjs';
 import swaggerUi from 'swagger-ui-express';
 import { check, validationResult } from 'express-validator';
 
-import { initDatabase } from './db.js';
 import { swaggerSpec } from './swagger.js';
+import authRouter from './routes/auth.js';
 import * as dao from './dao.js';
+import { connectDatabase } from './db.js';
 import {
   calculateMinDistance,
   validateRoute,
@@ -40,8 +41,8 @@ const isLoggedIn = (req, res, next) => {
 
 async function startServer() {
   try {
-    // Initialize database
-    await initDatabase();
+    // Connect to database
+    await connectDatabase();
 
     // Passport configuration
     passport.use(
@@ -104,75 +105,8 @@ async function startServer() {
     app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, { explorer: true }));
 
     // ===== AUTHENTICATION ROUTES =====
+    app.use('/auth', authRouter);
 
-    /**
-     * @swagger
-     * /auth/login:
-     *   post:
-     *     summary: Login user
-     *     tags: [Authentication]
-     *     security: []
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             properties:
-     *               username:
-     *                 type: string
-     *               password:
-     *                 type: string
-     *     responses:
-     *       200:
-     *         description: Login successful
-     */
-    app.post('/auth/login', passport.authenticate('local'), (req, res) => {
-      res.json({
-        user: { id: req.user.id, username: req.user.username },
-      });
-    });
-
-    /**
-     * @swagger
-     * /auth/logout:
-     *   post:
-     *     summary: Logout user
-     *     tags: [Authentication]
-     *     responses:
-     *       200:
-     *         description: Logout successful
-     */
-    app.post('/auth/logout', isLoggedIn, (req, res) => {
-      req.logout((err) => {
-        if (err) {
-          return res.status(500).json({ error: 'Logout failed' });
-        }
-        res.json({ success: true });
-      });
-    });
-
-    /**
-     * @swagger
-     * /auth/status:
-     *   get:
-     *     summary: Check authentication status
-     *     tags: [Authentication]
-     *     security: []
-     *     responses:
-     *       200:
-     *         description: Authentication status
-     */
-    app.get('/auth/status', (req, res) => {
-      if (req.isAuthenticated()) {
-        res.json({
-          authenticated: true,
-          user: { id: req.user.id, username: req.user.username },
-        });
-      } else {
-        res.json({ authenticated: false });
-      }
-    });
 
     // ===== NETWORK ROUTES =====
 

@@ -1,188 +1,214 @@
 import bcryptjs from 'bcryptjs';
+import { connectDatabase, promiseDbRun } from './db.js';
 
-import { getDatabase, initDatabase } from './db.js';
+// 1. Funktion för att skapa tabellstrukturen
+async function initDatabase() {
+  console.log('Skapar databasstruktur och tabeller...');
+  
+  // Rensa existerande tabeller för en ren omstart
+  const tables = ['game_segments', 'games', 'segments', 'events', 'stations', 'lines', 'users'];
+  for (const table of tables) {
+    await promiseDbRun(`DROP TABLE IF EXISTS ${table}`);
+  }
 
-function promiseDbRun(db, query, params = []) {
-  return new Promise((resolve, reject) => {
-    db.run(query, params, function (err) {
-      if (err) reject(err);
-      else resolve({ lastID: this.lastID });
-    });
-  });
+  // Skapa tabeller
+  await promiseDbRun(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await promiseDbRun(`
+    CREATE TABLE IF NOT EXISTS lines (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE NOT NULL,
+      color TEXT
+    )
+  `);
+
+  await promiseDbRun(`
+    CREATE TABLE IF NOT EXISTS stations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE NOT NULL,
+      x INTEGER,
+      y INTEGER
+    )
+  `);
+
+  await promiseDbRun(`
+    CREATE TABLE IF NOT EXISTS segments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      station_a_id INTEGER NOT NULL,
+      station_b_id INTEGER NOT NULL,
+      line_id INTEGER NOT NULL,
+      FOREIGN KEY (station_a_id) REFERENCES stations(id) ON DELETE CASCADE,
+      FOREIGN KEY (station_b_id) REFERENCES stations(id) ON DELETE CASCADE,
+      FOREIGN KEY (line_id) REFERENCES lines(id) ON DELETE CASCADE,
+      UNIQUE(station_a_id, station_b_id, line_id)
+    )
+  `);
+
+  await promiseDbRun(`
+    CREATE TABLE IF NOT EXISTS events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      description TEXT NOT NULL,
+      coin_effect INTEGER NOT NULL CHECK(coin_effect >= -4 AND coin_effect <= 4)
+    )
+  `);
+
+  await promiseDbRun(`
+    CREATE TABLE IF NOT EXISTS games (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      start_station_id INTEGER NOT NULL,
+      destination_station_id INTEGER NOT NULL,
+      is_valid INTEGER DEFAULT 0,
+      final_score INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (start_station_id) REFERENCES stations(id),
+      FOREIGN KEY (destination_station_id) REFERENCES stations(id)
+    )
+  `);
+
+  await promiseDbRun(`
+    CREATE TABLE IF NOT EXISTS game_segments (
+      game_id INTEGER NOT NULL,
+      segment_sequence INTEGER NOT NULL,
+      segment_id INTEGER NOT NULL,
+      event_id INTEGER NOT NULL,
+      coins_before INTEGER NOT NULL,
+      coins_after INTEGER NOT NULL,
+      FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE,
+      FOREIGN KEY (segment_id) REFERENCES segments(id),
+      FOREIGN KEY (event_id) REFERENCES events(id),
+      PRIMARY KEY (game_id, segment_sequence)
+    )
+  `);
+
+  // Skapa index
+  await promiseDbRun('CREATE INDEX IF NOT EXISTS idx_games_user_id ON games(user_id)');
+  await promiseDbRun('CREATE INDEX IF NOT EXISTS idx_segments_stations ON segments(station_a_id, station_b_id)');
 }
 
-function promiseDbGet(db, query, params = []) {
-  return new Promise((resolve, reject) => {
-    db.get(query, params, (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
-}
-
-async function seedDatabase() {
-  const db = getDatabase();
+// 2. Funktion för att fylla på data
+async function seedData() {
+  console.log('Påbörjar seeding av Göteborgs spårvagnsnät...');
 
   const hash1 = bcryptjs.hashSync('password1', 10);
   const hash2 = bcryptjs.hashSync('password2', 10);
   const hash3 = bcryptjs.hashSync('password3', 10);
 
-  await promiseDbRun(db, 'INSERT INTO users (username, password_hash) VALUES (?, ?)', [
+  await promiseDbRun('INSERT INTO users (username, password_hash) VALUES (?, ?)', [
     'alice',
     hash1,
   ]);
-  await promiseDbRun(db, 'INSERT INTO users (username, password_hash) VALUES (?, ?)', [
+  await promiseDbRun('INSERT INTO users (username, password_hash) VALUES (?, ?)', [
     'bob',
     hash2,
   ]);
-  await promiseDbRun(db, 'INSERT INTO users (username, password_hash) VALUES (?, ?)', [
+  await promiseDbRun('INSERT INTO users (username, password_hash) VALUES (?, ?)', [
     'charlie',
     hash3,
   ]);
 
-  const lines = [
-    { name: 'Red Line', color: '#E60000' },
-    { name: 'Green Line', color: '#00AA44' },
-    { name: 'Blue Line', color: '#0066CC' },
-    { name: 'Yellow Line', color: '#FFCC00' },
-    { name: 'Purple Line', color: '#9933CC' },
+const lines = [
+    { name: '7', color: '#8B4513' },    // brown
+    { name: '6', color: '#FFA500' },    // orange
+    { name: '11', color: '#000000' },   // black
+    { name: '12', color: '#40E0D0' }    // turquoise
   ];
 
-  const lineIds = {};
   for (const line of lines) {
-    const result = await promiseDbRun(db, 'INSERT INTO lines (name, color) VALUES (?, ?)', [
-      line.name,
-      line.color,
-    ]);
-    lineIds[line.name] = result.lastID;
+    await promiseDbRun('INSERT OR IGNORE INTO lines (name, color) VALUES (?, ?)', [line.name, line.color]);
   }
 
   const stations = [
-    { name: 'Centralen', x: 300, y: 250 },
-    { name: 'Korsvägen', x: 200, y: 150 },
-    { name: 'Hjalmar Brantingsplatsen', x: 400, y: 350 },
-    { name: 'Scaniabadet', x: 100, y: 100 },
-    { name: 'Ekmanska', x: 150, y: 200 },
-    { name: 'Seminariegatan', x: 250, y: 50 },
-    { name: 'Grönsakstorget', x: 400, y: 100 },
-    { name: 'Marklandsgatan', x: 350, y: 400 },
-    { name: 'Vasa Viktoria', x: 50, y: 300 },
-    { name: 'Kapellplatsen', x: 500, y: 200 },
-    { name: 'Järntorget', x: 200, y: 450 },
-    { name: 'Chalmers', x: 450, y: 500 },
-    { name: 'Valand', x: 300, y: 550 },
+    { name: 'Saltholmen', x: 10, y: 95 },
+    { name: 'Frölunda Torg', x: 22, y: 95 },
+    { name: 'Marklandsgatan', x: 22, y: 75 },
+    { name: 'Järntorget', x: 22, y: 60 },
+    { name: 'Lindholmen', x: 70, y: 10 },
+    { name: 'Länsmansgården', x: 15, y: 5 },
+    { name: 'Hjälmarbrantingsplatsen', x: 32, y: 40 },
+    { name: 'Vasaplatsen', x: 46, y: 60 },
+    { name: 'Chalmers', x: 34, y: 70 },
+    { name: 'Korsvägen', x: 70, y: 60 },
+    { name: 'Brunnsparken', x: 50, y: 48 },
+    { name: 'Centralstationen', x: 70, y: 30 },
+    { name: 'Mölndal', x: 70, y: 95 },
+    { name: 'Kortedala', x: 95, y: 30 },
+    { name: 'Bergsjön', x: 95, y: 15 },
+    {name: 'Angered', x:50, y:10 }
   ];
-
-  const stationIds = {};
   for (const station of stations) {
-    const result = await promiseDbRun(db, 'INSERT INTO stations (name, x, y) VALUES (?, ?, ?)', [
-      station.name,
-      station.x,
-      station.y,
-    ]);
-    stationIds[station.name] = result.lastID;
+    await promiseDbRun('INSERT OR IGNORE INTO stations (name, x, y) VALUES (?, ?, ?)', [station.name, station.x, station.y]);
   }
 
-  const lineConnections = {
-    'Red Line': [
-      'Marklandsgatan',
-      'Hjalmar Brantingsplatsen',
-      'Centralen',
-      'Korsvägen',
-      'Scaniabadet',
-    ],
-    'Green Line': ['Scaniabadet', 'Ekmanska', 'Centralen', 'Vasa Viktoria'],
-    'Blue Line': [
-      'Seminariegatan',
-      'Grönsakstorget',
-      'Hjalmar Brantingsplatsen',
-      'Kapellplatsen',
-    ],
-    'Yellow Line': ['Korsvägen', 'Grönsakstorget', 'Järntorget', 'Valand'],
-    'Purple Line': ['Hjalmar Brantingsplatsen', 'Valand', 'Chalmers', 'Vasa Viktoria'],
-  };
-
-  for (const [lineName, stationNames] of Object.entries(lineConnections)) {
-    const lineId = lineIds[lineName];
-
-    for (let i = 0; i < stationNames.length; i++) {
-      const stationName = stationNames[i];
-      const stationId = stationIds[stationName];
-      await promiseDbRun(
-        db,
-        'INSERT INTO line_stations (line_id, station_id, order_pos) VALUES (?, ?, ?)',
-        [lineId, stationId, i]
-      );
-    }
-
-    for (let i = 0; i < stationNames.length - 1; i++) {
-      const stationAId = stationIds[stationNames[i]];
-      const stationBId = stationIds[stationNames[i + 1]];
-
-      await promiseDbRun(
-        db,
-        'INSERT INTO segments (station_a_id, station_b_id, line_id) VALUES (?, ?, ?)',
-        [stationAId, stationBId, lineId]
-      );
-
-      await promiseDbRun(
-        db,
-        'INSERT INTO segments (station_a_id, station_b_id, line_id) VALUES (?, ?, ?)',
-        [stationBId, stationAId, lineId]
-      );
-    }
+  async function insertSegment(lineName, stationA, stationB) {
+    await promiseDbRun(`
+      INSERT OR IGNORE INTO segments (line_id, station_a_id, station_b_id)
+      VALUES (
+        (SELECT id FROM lines WHERE name = ?),
+        (SELECT id FROM stations WHERE name = ?),
+        (SELECT id FROM stations WHERE name = ?)
+      )
+    `, [lineName, stationA, stationB]);
   }
 
+  // Linje 7
+  await insertSegment('7', 'Frölunda Torg', 'Marklandsgatan');
+  await insertSegment('7', 'Marklandsgatan', 'Chalmers');
+  await insertSegment('7', 'Chalmers', 'Vasaplatsen');
+  await insertSegment('7', 'Vasaplatsen', 'Brunnsparken');
+  await insertSegment('7', 'Brunnsparken', 'Angered');
+
+
+  // Linje 6
+  await insertSegment('6', 'Länsmansgården', 'Hjälmarbrantingsplatsen');
+  await insertSegment('6', 'Hjälmarbrantingsplatsen', 'Järntorget');
+  await insertSegment('6', 'Järntorget', 'Chalmers');
+  await insertSegment('6', 'Chalmers', 'Korsvägen');
+  await insertSegment('6', 'Korsvägen', 'Kortedala');
+
+  // Linje 11
+  await insertSegment('11', 'Saltholmen', 'Järntorget');
+  await insertSegment('11', 'Järntorget', 'Brunnsparken');
+  await insertSegment('11', 'Brunnsparken', 'Centralstationen');
+  await insertSegment('11', 'Centralstationen', 'Bergsjön');
+
+  // Linje 12
+  await insertSegment('12', 'Mölndal', 'Korsvägen');
+  await insertSegment('12', 'Korsvägen', 'Centralstationen');
+  await insertSegment('12', 'Centralstationen', 'Lindholmen');
+
+  // Events
   const events = [
-    { description: 'Quiet journey', coin_effect: 0 },
-    { description: 'Wrong platform', coin_effect: -2 },
-    { description: 'Kind passenger offers help', coin_effect: 1 },
-    { description: 'Found dropped coins', coin_effect: 2 },
-    { description: 'Door malfunction delay', coin_effect: -1 },
-    { description: 'Tourist asks for directions', coin_effect: 0 },
-    { description: 'Unexpected service interruption', coin_effect: -3 },
-    { description: 'Lucky draw winners announcement', coin_effect: 3 },
-    { description: 'Station maintenance noise', coin_effect: -1 },
+    { desc: 'Hittade en pantburk på sätet', effect: 1 },
+    { desc: 'Västtrafik biljettkontroll! Du fick böter', effect: -4 },
+    { desc: 'Lugn resa', effect: 0 },
+    { desc: 'Spårvagnen var försenad, du köpte kaffe', effect: -1 }
   ];
-
-  for (const event of events) {
-    await promiseDbRun(db, 'INSERT INTO events (description, coin_effect) VALUES (?, ?)', [
-      event.description,
-      event.coin_effect,
-    ]);
+  for (const ev of events) {
+    await promiseDbRun('INSERT OR IGNORE INTO events (description, coin_effect) VALUES (?, ?)', [ev.desc, ev.effect]);
   }
-
-  const alice = await promiseDbGet(db, 'SELECT id FROM users WHERE username = ?', ['alice']);
-  const bob = await promiseDbGet(db, 'SELECT id FROM users WHERE username = ?', ['bob']);
-
-  await promiseDbRun(
-    db,
-    'INSERT INTO games (user_id, start_station_id, destination_station_id, is_valid, final_score) VALUES (?, ?, ?, ?, ?)',
-    [alice.id, stationIds['Centralen'], stationIds['Scaniabadet'], 1, 18]
-  );
-
-  await promiseDbRun(
-    db,
-    'INSERT INTO games (user_id, start_station_id, destination_station_id, is_valid, final_score) VALUES (?, ?, ?, ?, ?)',
-    [bob.id, stationIds['Korsvägen'], stationIds['Valand'], 1, 22]
-  );
-
-  await promiseDbRun(
-    db,
-    'INSERT INTO games (user_id, start_station_id, destination_station_id, is_valid, final_score) VALUES (?, ?, ?, ?, ?)',
-    [bob.id, stationIds['Marklandsgatan'], stationIds['Chalmers'], 1, 25]
-  );
-
-  console.log('Database seeded');
 }
 
+// 3. Starta processen
 async function main() {
   try {
-    await initDatabase();
-    await seedDatabase();
+    await connectDatabase(); // Koppla upp mot game.db
+    await initDatabase();    // Skapa tabeller
+    await seedData();        // Fyll med data
+    
+    console.log('✅ Databasen är initierad och seedad!');
+    process.exit(0);
   } catch (error) {
-    console.error('Seeding failed:', error);
-    process.exitCode = 1;
+    console.error('❌ Ett fel uppstod:', error);
+    process.exit(1);
   }
 }
 

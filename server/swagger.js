@@ -1,5 +1,11 @@
 import swaggerJsdoc from 'swagger-jsdoc';
 
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const apiGlob = path.join(__dirname, 'routes', '*.js');
+
 const options = {
   definition: {
     openapi: '3.0.0',
@@ -86,7 +92,7 @@ const options = {
       },
     ],
   },
-  apis: ['./routes/*.js'],
+  apis: [apiGlob],
 };
 
 export const swaggerSpec = swaggerJsdoc(options);

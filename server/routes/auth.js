@@ -6,7 +6,36 @@ const router = Router();
 
 /**
  * @swagger
- * POST /auth/login:
+ * /auth/login:
+ *   post:
+ *     summary: Login with credentials
+ *     tags:
+ *       - Auth
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Logged in
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Invalid credentials
  */
 router.post('/login', isNotAuthenticated, passport.authenticate('local'), (req, res) => {
   res.json({
@@ -17,7 +46,16 @@ router.post('/login', isNotAuthenticated, passport.authenticate('local'), (req, 
 
 /**
  * @swagger
- * POST /auth/logout:
+ * /auth/logout:
+ *   post:
+ *     summary: Logout the current user
+ *     tags:
+ *       - Auth
+ *     security:
+ *       - sessionAuth: []
+ *     responses:
+ *       200:
+ *         description: Logged out successfully
  */
 router.post('/logout', isAuthenticated, (req, res) => {
   req.logout((err) => {
@@ -30,7 +68,23 @@ router.post('/logout', isAuthenticated, (req, res) => {
 
 /**
  * @swagger
- * GET /auth/status:
+ * /auth/status:
+ *   get:
+ *     summary: Get authentication status
+ *     tags:
+ *       - Auth
+ *     responses:
+ *       200:
+ *         description: Authentication status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 authenticated:
+ *                   type: boolean
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
  */
 router.get('/status', (req, res) => {
   if (req.isAuthenticated()) {

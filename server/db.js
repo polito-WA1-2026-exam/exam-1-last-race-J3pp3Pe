@@ -7,7 +7,19 @@ const dbPath = path.join(__dirname, 'game.db');
 
 let db;
 
-function promiseDb(query, params = []) {
+export function connectDatabase() {
+  return new Promise((resolve, reject) => {
+    db = new sqlite3.Database(dbPath, (err) => {
+      if (err) reject(err);
+      else {
+        console.log('Connected to database:', dbPath);
+        resolve();
+      }
+    });
+  });
+}
+
+export function promiseDb(query, params = []) {
   return new Promise((resolve, reject) => {
     db.all(query, params, (err, rows) => {
       if (err) reject(err);
@@ -16,8 +28,13 @@ function promiseDb(query, params = []) {
   });
 }
 
-function promiseDbGet(query, params = []) {
+export function promiseDbGet(query, params = []) {
   return new Promise((resolve, reject) => {
+    if (!db) {
+      console.error('promiseDbGet called but db is undefined');
+      reject(new Error('Database not connected'));
+      return;
+    }
     db.get(query, params, (err, row) => {
       if (err) reject(err);
       else resolve(row);
@@ -25,7 +42,7 @@ function promiseDbGet(query, params = []) {
   });
 }
 
-function promiseDbRun(query, params = []) {
+export function promiseDbRun(query, params = []) {
   return new Promise((resolve, reject) => {
     db.run(query, params, function (err) {
       if (err) reject(err);
@@ -33,139 +50,6 @@ function promiseDbRun(query, params = []) {
     });
   });
 }
-
-export async function initDatabase() {
-  return new Promise((resolve, reject) => {
-    db = new sqlite3.Database(dbPath, async (err) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      try {
-        // Enable foreign keys
-        await promiseDbRun('PRAGMA foreign_keys = ON');
-
-        // Drop existing tables for fresh start (dev only)
-        const tables = [
-          'game_segments',
-          'games',
-          'line_stations',
-          'segments',
-          'events',
-          'stations',
-          'lines',
-          'users',
-        ];
-
-        for (const table of tables) {
-          await promiseDbRun(`DROP TABLE IF EXISTS ${table}`);
-        }
-
-        // Create tables
-        await promiseDbRun(`
-          CREATE TABLE users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-          )
-        `);
-
-        await promiseDbRun(`
-          CREATE TABLE lines (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE NOT NULL,
-            color TEXT
-          )
-        `);
-
-        await promiseDbRun(`
-          CREATE TABLE stations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE NOT NULL,
-            x INTEGER,
-            y INTEGER
-          )
-        `);
-
-        await promiseDbRun(`
-          CREATE TABLE line_stations (
-            line_id INTEGER NOT NULL,
-            station_id INTEGER NOT NULL,
-            order_pos INTEGER NOT NULL,
-            FOREIGN KEY (line_id) REFERENCES lines(id),
-            FOREIGN KEY (station_id) REFERENCES stations(id),
-            PRIMARY KEY (line_id, station_id)
-          )
-        `);
-
-        await promiseDbRun(`
-          CREATE TABLE segments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            station_a_id INTEGER NOT NULL,
-            station_b_id INTEGER NOT NULL,
-            line_id INTEGER NOT NULL,
-            FOREIGN KEY (station_a_id) REFERENCES stations(id),
-            FOREIGN KEY (station_b_id) REFERENCES stations(id),
-            FOREIGN KEY (line_id) REFERENCES lines(id),
-            UNIQUE(station_a_id, station_b_id, line_id)
-          )
-        `);
-
-        await promiseDbRun(`
-          CREATE TABLE events (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            description TEXT NOT NULL,
-            coin_effect INTEGER NOT NULL CHECK(coin_effect >= -4 AND coin_effect <= 4)
-          )
-        `);
-
-        await promiseDbRun(`
-          CREATE TABLE games (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            start_station_id INTEGER NOT NULL,
-            destination_station_id INTEGER NOT NULL,
-            submitted_route TEXT,
-            is_valid INTEGER DEFAULT 0,
-            final_score INTEGER DEFAULT 0,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id),
-            FOREIGN KEY (start_station_id) REFERENCES stations(id),
-            FOREIGN KEY (destination_station_id) REFERENCES stations(id)
-          )
-        `);
-
-        await promiseDbRun(`
-          CREATE TABLE game_segments (
-            game_id INTEGER NOT NULL,
-            segment_sequence INTEGER NOT NULL,
-            segment_id INTEGER NOT NULL,
-            event_id INTEGER NOT NULL,
-            coins_before INTEGER NOT NULL,
-            coins_after INTEGER NOT NULL,
-            FOREIGN KEY (game_id) REFERENCES games(id),
-            FOREIGN KEY (segment_id) REFERENCES segments(id),
-            FOREIGN KEY (event_id) REFERENCES events(id),
-            PRIMARY KEY (game_id, segment_sequence)
-          )
-        `);
-
-        // Create indexes
-        await promiseDbRun('CREATE INDEX idx_games_user_id ON games(user_id)');
-        await promiseDbRun(
-          'CREATE INDEX idx_segments_stations ON segments(station_a_id, station_b_id)'
-        );
-        await promiseDbRun('CREATE INDEX idx_line_stations_line ON line_stations(line_id)');
-        resolve();
-      } catch (error) {
-        reject(error);
-      }
-    });
-  });
-}
-
 
 export function getDatabase() {
   return db;
