@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useRef } from 'react'; // Lägg till useRef
 import { useLocation, useNavigate } from 'react-router-dom';
 import GameContext from '../contexts/GameContext.jsx';
 
@@ -11,19 +11,27 @@ export default function ExecutePage() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [currentEventIndex, setCurrentEventIndex] = useState(-1);
+  
+  // NYTT: En ref för att spåra om vi redan har anropat API:et
+  const hasExecuted = useRef(false);
 
   useEffect(() => {
     const executeGame = async () => {
+      // NYTT: Avbryt direkt om vi redan har kört funktionen
+      if (hasExecuted.current) return;
+      hasExecuted.current = true;
+
       try {
         setExecuting(true);
         const route = location.state?.route;
+        const gameId = location.state?.gameId;
 
-        if (!route || !currentGame) {
+        if (!route || !gameId) {
           setError('No route or game data');
           return;
         }
 
-        const gameResult = await playGame(route);
+        const gameResult = await playGame(route, gameId);
         setResult(gameResult);
 
         // If invalid route, navigate to result immediately

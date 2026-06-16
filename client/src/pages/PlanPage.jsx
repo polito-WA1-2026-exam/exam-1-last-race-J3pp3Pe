@@ -114,13 +114,12 @@ export default function PlanPage() {
 
       {error && <div className="alert alert-danger">{error}</div>}
 
-      <div className="row mb-4">
-        <div className="col-lg-6">
-          <h5>Network Map</h5>
+      <div className="row">
+        <div className="col-lg-8">
           {network && <NetworkVisualization network={network} showSegments={false} />}
         </div>
 
-        <div className="col-lg-6">
+        <div className="col-lg-4">
           <div className="card">
             <div className="card-body">
             <h5>Route Builder ({selectedSegments.length} segments)</h5>

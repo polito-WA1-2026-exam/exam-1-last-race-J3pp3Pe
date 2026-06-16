@@ -65,40 +65,57 @@ export async function validateRoute(
 function buildRouteStations(segments) {
   if (segments.length === 0) return null;
 
-  const stations = [segments[0].station_a_id];
-  let currentStation = segments[0].station_b_id;
-  stations.push(currentStation);
+  // Try starting from either end of the first segment
+  for (let startEnd = 0; startEnd < 2; startEnd++) {
+    const stations = [];
+    let currentStation;
 
-  const usedSegments = new Set([0]);
+    if (startEnd === 0) {
+      stations.push(segments[0].station_a_id);
+      currentStation = segments[0].station_b_id;
+    } else {
+      stations.push(segments[0].station_b_id);
+      currentStation = segments[0].station_a_id;
+    }
+    stations.push(currentStation);
 
-  for (let i = 1; i < segments.length; i++) {
-    let found = false;
+    const usedSegments = new Set([0]);
+    let success = true;
 
-    for (let j = 0; j < segments.length; j++) {
-      if (usedSegments.has(j)) continue;
+    for (let i = 1; i < segments.length; i++) {
+      let found = false;
 
-      const seg = segments[j];
-      if (seg.station_a_id === currentStation) {
-        stations.push(seg.station_b_id);
-        currentStation = seg.station_b_id;
-        usedSegments.add(j);
-        found = true;
-        break;
-      } else if (seg.station_b_id === currentStation) {
-        stations.push(seg.station_a_id);
-        currentStation = seg.station_a_id;
-        usedSegments.add(j);
-        found = true;
+      for (let j = 0; j < segments.length; j++) {
+        if (usedSegments.has(j)) continue;
+
+        const seg = segments[j];
+        if (seg.station_a_id === currentStation) {
+          stations.push(seg.station_b_id);
+          currentStation = seg.station_b_id;
+          usedSegments.add(j);
+          found = true;
+          break;
+        } else if (seg.station_b_id === currentStation) {
+          stations.push(seg.station_a_id);
+          currentStation = seg.station_a_id;
+          usedSegments.add(j);
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+        success = false;
         break;
       }
     }
 
-    if (!found) {
-      return null;
+    if (success) {
+      return stations;
     }
   }
 
-  return stations;
+  return null;
 }
 
 async function checkLineChangesValid(segments, routeStations) {

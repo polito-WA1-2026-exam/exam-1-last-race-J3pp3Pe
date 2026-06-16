@@ -47,11 +47,15 @@ export const GameProvider = ({ children }) => {
     }
   };
 
-  const playGame = async (segments) => {
+  const playGame = async (segments, gameId = null) => {
     try {
       setError(null);
       setLoading(true);
-      const result = await gameApi.submitRoute(currentGame.gameId, segments);
+      const id = gameId || currentGame?.gameId;
+      if (!id) {
+        throw new Error('Game ID is required');
+      }
+      const result = await gameApi.submitRoute(id, segments);
       const gameResult = new GameResult(
         result.gameId,
         result.isValid,

@@ -156,14 +156,3 @@ export async function getUserRankings() {
      ORDER BY best_score DESC, game_count DESC
   `);
 }
-
-export async function getLineStations(lineId) {
-  return promiseDb(
-    `SELECT s.id, s.name, ls.order_pos
-     FROM line_stations ls
-     JOIN stations s ON ls.station_id = s.id
-     WHERE ls.line_id = ?
-     ORDER BY ls.order_pos`,
-    [lineId]
-  );
-}

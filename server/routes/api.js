@@ -233,6 +233,13 @@ router.post('/game/play', isAuthenticated, async (req, res) => {
       return res.status(403).json({ error: 'Not authorized to play this game' });
     }
 
+    // --- LÄGG TILL DESSA LOGGAR ---
+    console.log("=== NYTT ANROP TILL /game/play ===");
+    console.log("Hela body:", req.body);
+    console.log("Typ av gameId:", typeof gameId, "- Värde:", gameId);
+    console.log("Typ av segments:", typeof segments, "- Värde:", segments);
+    // ------------------------------
+
     // Validate route
     const validation = await validateRoute(
       game.start_station_id,

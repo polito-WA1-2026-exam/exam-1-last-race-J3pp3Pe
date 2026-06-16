@@ -2,8 +2,6 @@ import React from 'react';
 
 export default function NetworkVisualization({
   network,
-  onSegmentClick,
-  selectedSegments = [],
   showSegments = true,
 }) {
   if (!network || !network.stations || !network.lines) {
@@ -56,7 +54,7 @@ export default function NetworkVisualization({
   }
 
   return (
-    <div className="bg-white border rounded p-3 my-3 overflow-auto">
+    <div className="bg-white border rounded p-3 overflow-auto">
       <svg width={width} height={height} style={{ border: '1px solid #ddd', borderRadius: 6 }}>
         {/* Draw lines */}
         {showSegments &&
@@ -104,7 +102,6 @@ export default function NetworkVisualization({
                 stroke="#764ba2"
                 strokeWidth="2"
                 style={{ cursor: 'pointer' }}
-                onClick={() => onSegmentClick && onSegmentClick(station.id)}
               />
               <text
                 x={pos.x}
@@ -119,13 +116,6 @@ export default function NetworkVisualization({
           );
         })}
       </svg>
-
-      <div className="mt-3">
-        <small className="text-muted">
-          {network.lines.length} lines • {network.stations.length} stations
-          {showSegments ? ` • ${network.segments.length} segments` : ' • segments hidden'}
-        </small>
-      </div>
     </div>
   );
 }

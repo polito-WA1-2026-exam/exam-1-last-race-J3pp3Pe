@@ -65,6 +65,7 @@ async function initDatabase() {
       user_id INTEGER,
       start_station_id INTEGER NOT NULL,
       destination_station_id INTEGER NOT NULL,
+      submitted_route TEXT,
       is_valid INTEGER DEFAULT 0,
       final_score INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

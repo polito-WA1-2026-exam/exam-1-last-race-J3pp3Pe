@@ -15,6 +15,14 @@ export default function Header() {
     }
   };
 
+  const handleLogoClick = (e) => {
+    if (user) {
+      navigate('/setup');
+    } else {
+      navigate('/');
+    }
+  };
+
   return (
     <header
       className="text-white py-3 shadow-sm"
@@ -22,9 +30,13 @@ export default function Header() {
     >
       <div className="container">
         <div className="d-flex justify-content-between align-items-center">
-          <Link to="/" className="text-white text-decoration-none">
+          <button
+            onClick={handleLogoClick}
+            className="text-white text-decoration-none bg-transparent border-0"
+            style={{ cursor: 'pointer' }}
+          >
             <h1 className="h3 mb-0">🚇 Last Race</h1>
-          </Link>
+          </button>
           {user && (
             <div className="d-flex gap-2 align-items-center">
               <span>Welcome, {user.username}</span>
