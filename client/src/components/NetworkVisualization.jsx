@@ -1,6 +1,11 @@
 import React from 'react';
 
-export default function NetworkVisualization({ network, onSegmentClick, selectedSegments = [] }) {
+export default function NetworkVisualization({
+  network,
+  onSegmentClick,
+  selectedSegments = [],
+  showSegments = true,
+}) {
   if (!network || !network.stations || !network.lines) {
     return <div className="text-center">No network data available</div>;
   }
@@ -39,49 +44,52 @@ export default function NetworkVisualization({ network, onSegmentClick, selected
     };
   };
 
-  // Group segments by line and render them
+  // Group segments by line and render them when the full network should be shown.
   const segmentsByLine = {};
-  network.segments.forEach((seg) => {
-    if (!segmentsByLine[seg.line_id]) {
-      segmentsByLine[seg.line_id] = [];
-    }
-    segmentsByLine[seg.line_id].push(seg);
-  });
+  if (showSegments) {
+    network.segments.forEach((seg) => {
+      if (!segmentsByLine[seg.line_id]) {
+        segmentsByLine[seg.line_id] = [];
+      }
+      segmentsByLine[seg.line_id].push(seg);
+    });
+  }
 
   return (
     <div className="bg-white border rounded p-3 my-3 overflow-auto">
       <svg width={width} height={height} style={{ border: '1px solid #ddd', borderRadius: 6 }}>
         {/* Draw lines */}
-        {Object.entries(segmentsByLine).map(([lineId, segments]) => {
-          const line = lineMap[lineId];
-          return (
-            <g key={`line-${lineId}`}>
-              {segments.map((seg) => {
-                const stationA = stationMap[seg.station_a_id];
-                const stationB = stationMap[seg.station_b_id];
-                if (!stationA || !stationB) return null;
+        {showSegments &&
+          Object.entries(segmentsByLine).map(([lineId, segments]) => {
+            const line = lineMap[lineId];
+            return (
+              <g key={`line-${lineId}`}>
+                {segments.map((seg) => {
+                  const stationA = stationMap[seg.station_a_id];
+                  const stationB = stationMap[seg.station_b_id];
+                  if (!stationA || !stationB) return null;
 
-                const posA = getStationPosition(stationA);
-                const posB = getStationPosition(stationB);
+                  const posA = getStationPosition(stationA);
+                  const posB = getStationPosition(stationB);
 
-                return (
-                  <line
-                    key={`segment-${seg.id}`}
-                    x1={posA.x}
-                    y1={posA.y}
-                    x2={posB.x}
-                    y2={posB.y}
-                    style={{ cursor: 'pointer' }}
-                    strokeWidth="3"
-                    fill="none"
-                    stroke={line?.color || '#999'}
-                    strokeOpacity="0.6"
-                  />
-                );
-              })}
-            </g>
-          );
-        })}
+                  return (
+                    <line
+                      key={`segment-${seg.id}`}
+                      x1={posA.x}
+                      y1={posA.y}
+                      x2={posB.x}
+                      y2={posB.y}
+                      style={{ cursor: 'pointer' }}
+                      strokeWidth="3"
+                      fill="none"
+                      stroke={line?.color || '#999'}
+                      strokeOpacity="0.6"
+                    />
+                  );
+                })}
+              </g>
+            );
+          })}
 
         {/* Draw stations */}
         {network.stations.map((station) => {
@@ -114,7 +122,8 @@ export default function NetworkVisualization({ network, onSegmentClick, selected
 
       <div className="mt-3">
         <small className="text-muted">
-          {network.lines.length} lines • {network.stations.length} stations • {network.segments.length} segments
+          {network.lines.length} lines • {network.stations.length} stations
+          {showSegments ? ` • ${network.segments.length} segments` : ' • segments hidden'}
         </small>
       </div>
     </div>

@@ -65,8 +65,8 @@ export default function PlanPage() {
   };
 
   const handleSubmitRoute = async () => {
-    if (!game || selectedSegments.length === 0) {
-      setError('Please select at least one segment');
+    if (!game) {
+      setError('Game data is not ready');
       return;
     }
 
@@ -117,7 +117,7 @@ export default function PlanPage() {
       <div className="row mb-4">
         <div className="col-lg-6">
           <h5>Network Map</h5>
-          {network && <NetworkVisualization network={network} />}
+          {network && <NetworkVisualization network={network} showSegments={false} />}
         </div>
 
         <div className="col-lg-6">
