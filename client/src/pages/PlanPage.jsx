@@ -6,7 +6,7 @@ import NetworkVisualization from '../components/NetworkVisualization';
 import * as gameApi from '../api/api.js';
 
 export default function PlanPage() {
-  const { currentGame, startGame, network, loadNetwork } = useContext(GameContext);
+  const { currentGame, startGame, network, loadNetwork, resetCurrentGame } = useContext(GameContext);
   const { user } = useContext(UserContext);
   const navigate = useNavigate();
 
@@ -21,10 +21,12 @@ export default function PlanPage() {
       if (!network) {
         await loadNetwork();
       }
-      if (!game) {
-        const newGame = await startGame();
-        setGame(newGame);
-      }
+    if (game) { 
+      resetCurrentGame();
+    }
+
+    const newGame = await startGame();
+    setGame(newGame);
     };
     initGame();
   }, []);
