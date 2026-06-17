@@ -60,11 +60,6 @@ export default function ExecutePage() {
       }, 1500);
 
       return () => clearTimeout(timer);
-    } else if (currentEventIndex === result.events.length - 1) {
-      // All events shown, navigate to result
-      setTimeout(() => {
-        navigate('/result', { state: { result } });
-      }, 2000);
     }
   }, [currentEventIndex, result]);
 
@@ -162,6 +157,18 @@ export default function ExecutePage() {
               <p className="mt-2 text-muted">
                 Processing segment {currentEventIndex + 2} of {result.events.length}...
               </p>
+            </div>
+          )}
+
+          {currentEventIndex >= result.events.length - 1 && (
+            <div className="text-center mt-4">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => navigate('/result', { state: { result } })}
+              >
+                Go to result
+              </button>
             </div>
           )}
         </div>
