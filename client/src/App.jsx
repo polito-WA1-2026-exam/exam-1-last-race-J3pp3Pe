@@ -13,7 +13,6 @@ import PlanPage from './pages/PlanPage';
 import ExecutePage from './pages/ExecutePage';
 import ResultPage from './pages/ResultPage';
 import RankingsPage from './pages/RankingsPage';
-import PrivateRoute from './components/PrivateRoute';
 
 function App() {
   return (
@@ -25,11 +24,11 @@ function App() {
             <Routes>
               <Route path="/" element={<LoginPage />} />
               <Route path="/instructions" element={<InstructionsPage />} />
-              <Route path="/setup" element={<PrivateRoute><SetupPage /></PrivateRoute>} />
-              <Route path="/plan" element={<PrivateRoute><PlanPage /></PrivateRoute>} />
-              <Route path="/execute" element={<PrivateRoute><ExecutePage /></PrivateRoute>} />
-              <Route path="/result" element={<PrivateRoute><ResultPage /></PrivateRoute>} />
-              <Route path="/rankings" element={<PrivateRoute><RankingsPage /></PrivateRoute>} />
+              <Route path="/setup" element={<SetupPage />} />
+              <Route path="/plan" element={<PlanPage />} />
+              <Route path="/execute" element={<ExecutePage />} />
+              <Route path="/result" element={<ResultPage />} />
+              <Route path="/rankings" element={<RankingsPage />} />
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </main>
