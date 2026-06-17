@@ -42,50 +42,34 @@ export default function NetworkVisualization({
     };
   };
 
-  // Group segments by line and render them when the full network should be shown.
-  const segmentsByLine = {};
-  if (showSegments) {
-    network.segments.forEach((seg) => {
-      if (!segmentsByLine[seg.line_id]) {
-        segmentsByLine[seg.line_id] = [];
-      }
-      segmentsByLine[seg.line_id].push(seg);
-    });
-  }
-
   return (
     <div className="bg-white border rounded p-3 overflow-auto">
       <svg width={width} height={height} style={{ border: '1px solid #ddd', borderRadius: 6 }}>
         {/* Draw lines */}
         {showSegments &&
-          Object.entries(segmentsByLine).map(([lineId, segments]) => {
-            const line = lineMap[lineId];
+          network.segments.map((seg) => {
+            const stationA = stationMap[seg.station_a_id];
+            const stationB = stationMap[seg.station_b_id];
+            const line = lineMap[seg.line_id];
+
+            if (!stationA || !stationB) return null;
+
+            const posA = getStationPosition(stationA);
+            const posB = getStationPosition(stationB);
+
             return (
-              <g key={`line-${lineId}`}>
-                {segments.map((seg) => {
-                  const stationA = stationMap[seg.station_a_id];
-                  const stationB = stationMap[seg.station_b_id];
-                  if (!stationA || !stationB) return null;
-
-                  const posA = getStationPosition(stationA);
-                  const posB = getStationPosition(stationB);
-
-                  return (
-                    <line
-                      key={`segment-${seg.id}`}
-                      x1={posA.x}
-                      y1={posA.y}
-                      x2={posB.x}
-                      y2={posB.y}
-                      style={{ cursor: 'pointer' }}
-                      strokeWidth="3"
-                      fill="none"
-                      stroke={line?.color || '#999'}
-                      strokeOpacity="0.6"
-                    />
-                  );
-                })}
-              </g>
+              <line
+                key={`segment-${seg.id}`}
+                x1={posA.x}
+                y1={posA.y}
+                x2={posB.x}
+                y2={posB.y}
+                style={{ cursor: 'pointer' }}
+                strokeWidth="3"
+                fill="none"
+                stroke={line?.color || '#999'}
+                strokeOpacity="0.6"
+              />
             );
           })}
 
