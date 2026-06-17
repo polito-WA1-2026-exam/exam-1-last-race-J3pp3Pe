@@ -12,18 +12,6 @@ export async function getNetwork() {
   }
 }
 
-export async function getMe() {
-  try {
-    const response = await fetch(`${API_BASE}/me`, {
-      credentials: 'include',
-    });
-    if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    throw new Error('Failed to fetch user info', { cause: error });
-  }
-}
-
 export async function startNewGame() {
   try {
     const response = await fetch(`${API_BASE}/game/new`, {

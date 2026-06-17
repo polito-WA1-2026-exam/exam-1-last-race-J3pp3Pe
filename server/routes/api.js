@@ -56,30 +56,6 @@ router.get('/network', async (req, res) => {
 
 /**
  * @swagger
- * /api/me:
- *   get:
- *     summary: Get current user info
- *     description: Returns information about the currently authenticated user
- *     tags: [User]
- *     responses:
- *       200:
- *         description: Current user info
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/User'
- *       401:
- *         description: Not authenticated
- */
-router.get('/me', isAuthenticated, (req, res) => {
-  res.json({
-    id: req.user.id,
-    username: req.user.username,
-  });
-});
-
-/**
- * @swagger
  * /api/game/new:
  *   get:
  *     summary: Start a new game
