@@ -1,5 +1,5 @@
 // Data Access Object - all database operations
-import { promiseDb, promiseDbGet, promiseDbRun, getNetworkData } from './db.js';
+import { promiseDb, promiseDbGet, promiseDbRun } from './db.js';
 
 // User operations
 export async function getUserByUsername(username) {
@@ -7,12 +7,22 @@ export async function getUserByUsername(username) {
 }
 
 export async function getUserById(id) {
-  return promiseDbGet('SELECT id, username, password_hash FROM users WHERE id = ?', [id]);
+  return promiseDbGet('SELECT * FROM users WHERE id = ?', [id]);
 }
 
 // Network operations
 export async function getNetwork() {
-  return getNetworkData();
+  const lines = await promiseDb('SELECT * FROM lines');
+  const stations = await promiseDb('SELECT * FROM stations');
+  const segments = await promiseDb(
+    `SELECT s.id, s.station_a_id, s.station_b_id, s.line_id,
+            sa.name as station_a_name, sb.name as station_b_name
+     FROM segments s
+     JOIN stations sa ON s.station_a_id = sa.id
+     JOIN stations sb ON s.station_b_id = sb.id`
+  );
+
+  return { lines, stations, segments };
 }
 
 export async function getAllStations() {
@@ -38,25 +48,6 @@ export async function updateGameResult(gameId, route, isValid, finalScore) {
     'UPDATE games SET submitted_route = ?, is_valid = ?, final_score = ? WHERE id = ?',
     [JSON.stringify(route), isValid ? 1 : 0, finalScore, gameId]
   );
-}
-
-export async function saveGameSegment(
-  gameId,
-  segmentSequence,
-  segmentId,
-  eventId,
-  coinsBefore,
-  coinsAfter
-) {
-  await promiseDbRun(
-    'INSERT INTO game_segments (game_id, segment_sequence, segment_id, event_id, coins_before, coins_after) VALUES (?, ?, ?, ?, ?, ?)',
-    [gameId, segmentSequence, segmentId, eventId, coinsBefore, coinsAfter]
-  );
-}
-
-// Segment operations
-export async function getSegmentById(id) {
-  return promiseDbGet('SELECT * FROM segments WHERE id = ?', [id]);
 }
 
 export async function getAllSegments() {

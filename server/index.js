@@ -37,13 +37,11 @@ async function startServer() {
       new LocalStrategy(async (username, password, done) => {
         try {
           const user = await dao.getUserByUsername(username);
-
           if (!user) {
             return done(null, false, { message: 'User not found' });
           }
 
           const passwordMatch = bcryptjs.compareSync(password, user.password_hash);
-
           if (!passwordMatch) {
             return done(null, false, { message: 'Invalid password' });
           }
@@ -55,9 +53,7 @@ async function startServer() {
       })
     );
 
-    passport.serializeUser((user, done) => {
-      done(null, user.id);
-    });
+    passport.serializeUser((user, done) => done(null, user.id));
 
     passport.deserializeUser(async (id, done) => {
       try {
@@ -78,11 +74,7 @@ async function startServer() {
         secret: 'your-secret-key-change-in-production',
         resave: false,
         saveUninitialized: false,
-        cookie: {
-          secure: false,
-          httpOnly: true,
-          sameSite: 'lax',
-        },
+        cookie: {secure: false, httpOnly: true, sameSite: 'lax'},
       })
     );
 
@@ -95,11 +87,6 @@ async function startServer() {
     // Routes
     app.use('/auth', authRouter);
     app.use('/api', apiRouter);
-
-    // Health check
-    app.get('/health', (req, res) => {
-      res.json({ status: 'ok' });
-    });
 
     app.listen(port, () => {
       console.log(`Server listening at http://localhost:${port}`);
