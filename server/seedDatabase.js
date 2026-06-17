@@ -1,17 +1,14 @@
 import bcryptjs from 'bcryptjs';
 import { connectDatabase, promiseDbRun } from './db.js';
 
-// 1. Funktion för att skapa tabellstrukturen
 async function initDatabase() {
   console.log('Skapar databasstruktur och tabeller...');
   
-  // Rensa existerande tabeller för en ren omstart
-  const tables = ['game_segments', 'games', 'segments', 'events', 'stations', 'lines', 'users'];
+  const tables = ['games', 'segments', 'events', 'stations', 'lines', 'users'];
   for (const table of tables) {
     await promiseDbRun(`DROP TABLE IF EXISTS ${table}`);
   }
 
-  // Skapa tabeller
   await promiseDbRun(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -75,30 +72,12 @@ async function initDatabase() {
     )
   `);
 
-  await promiseDbRun(`
-    CREATE TABLE IF NOT EXISTS game_segments (
-      game_id INTEGER NOT NULL,
-      segment_sequence INTEGER NOT NULL,
-      segment_id INTEGER NOT NULL,
-      event_id INTEGER NOT NULL,
-      coins_before INTEGER NOT NULL,
-      coins_after INTEGER NOT NULL,
-      FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE,
-      FOREIGN KEY (segment_id) REFERENCES segments(id),
-      FOREIGN KEY (event_id) REFERENCES events(id),
-      PRIMARY KEY (game_id, segment_sequence)
-    )
-  `);
-
-  // Skapa index
   await promiseDbRun('CREATE INDEX IF NOT EXISTS idx_games_user_id ON games(user_id)');
   await promiseDbRun('CREATE INDEX IF NOT EXISTS idx_segments_stations ON segments(station_a_id, station_b_id)');
 }
 
-// 2. Funktion för att fylla på data
 async function seedData() {
-  console.log('Påbörjar seeding av Göteborgs spårvagnsnät...');
-
+  //users
   const hash1 = bcryptjs.hashSync('password1', 10);
   const hash2 = bcryptjs.hashSync('password2', 10);
   const hash3 = bcryptjs.hashSync('password3', 10);
@@ -116,6 +95,7 @@ async function seedData() {
     hash3,
   ]);
 
+//lines
 const lines = [
     { name: '7', color: '#8B4513' },    // brown
     { name: '6', color: '#FFA500' },    // orange
@@ -160,7 +140,7 @@ const lines = [
     `, [lineName, stationA, stationB]);
   }
 
-  // Linje 7
+  // Line 7
   await insertSegment('7', 'Frölunda Torg', 'Marklandsgatan');
   await insertSegment('7', 'Marklandsgatan', 'Chalmers');
   await insertSegment('7', 'Chalmers', 'Vasaplatsen');
@@ -168,42 +148,63 @@ const lines = [
   await insertSegment('7', 'Brunnsparken', 'Angered');
 
 
-  // Linje 6
+  // Line 6
   await insertSegment('6', 'Länsmansgården', 'Hjälmarbrantingsplatsen');
   await insertSegment('6', 'Hjälmarbrantingsplatsen', 'Järntorget');
   await insertSegment('6', 'Järntorget', 'Chalmers');
   await insertSegment('6', 'Chalmers', 'Korsvägen');
   await insertSegment('6', 'Korsvägen', 'Kortedala');
 
-  // Linje 11
+  // Line 11
   await insertSegment('11', 'Saltholmen', 'Järntorget');
   await insertSegment('11', 'Järntorget', 'Brunnsparken');
   await insertSegment('11', 'Brunnsparken', 'Centralstationen');
   await insertSegment('11', 'Centralstationen', 'Bergsjön');
 
-  // Linje 12
+  // Line 12
   await insertSegment('12', 'Mölndal', 'Korsvägen');
   await insertSegment('12', 'Korsvägen', 'Centralstationen');
   await insertSegment('12', 'Centralstationen', 'Lindholmen');
 
+  // Completed games
+  await promiseDbRun(
+    `INSERT INTO games (user_id, start_station_id, destination_station_id, submitted_route, is_valid, final_score)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [1, 1, 11, JSON.stringify([11, 12]), 1, 18]
+  );
+  await promiseDbRun(
+    `INSERT INTO games (user_id, start_station_id, destination_station_id, submitted_route, is_valid, final_score)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [2, 6, 4, JSON.stringify([6, 7]), 1, 15]
+  );
+  await promiseDbRun(
+    `INSERT INTO games (user_id, start_station_id, destination_station_id, submitted_route, is_valid, final_score)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [1, 13, 5, JSON.stringify([15, 16, 17]), 1, 24]
+  );
+
   // Events
   const events = [
-    { desc: 'Hittade en pantburk på sätet', effect: 1 },
-    { desc: 'Västtrafik biljettkontroll! Du fick böter', effect: -4 },
-    { desc: 'Lugn resa', effect: 0 },
-    { desc: 'Spårvagnen var försenad, du köpte kaffe', effect: -1 }
+    { desc: 'Nobody pressed stop and the platform was empty, so you got to skip the station entirely!', effect: 4},
+    { desc: 'Signal priority! You hit a green wave all the way.', effect: 3 },
+    { desc: 'You cross paths with your favorite colleague at an intersection and exchange a friendly wave.', effect: 2 },
+    { desc: 'A small child on the platform waves excitedly at you. You ding the bell back and smile!', effect: 1 },
+    { desc: 'Calm driving. The sun is actually shining in Gothenburg today.', effect: 0 },
+    { desc: 'The doors are jammed because travelers are crowding in.', effect: -1 },
+    { desc: 'Gear error, you have to go out and re-lay the track manually with the skewer.', effect: -2 },
+    { desc: 'A badly parked Volvo is blocking the tracks. You have to honk your bell and wait for the owner to move it.', effect: -3 },
+    { desc: 'The tram derails and crashes into a pizzeria.', effect: -4 }
   ];
   for (const ev of events) {
     await promiseDbRun('INSERT OR IGNORE INTO events (description, coin_effect) VALUES (?, ?)', [ev.desc, ev.effect]);
   }
 }
 
-// 3. Starta processen
 async function main() {
   try {
-    await connectDatabase(); // Koppla upp mot game.db
-    await initDatabase();    // Skapa tabeller
-    await seedData();        // Fyll med data
+    await connectDatabase();
+    await initDatabase();
+    await seedData();
     
     console.log('✅ Databasen är initierad och seedad!');
     process.exit(0);

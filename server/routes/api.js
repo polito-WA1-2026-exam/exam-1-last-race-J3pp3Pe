@@ -1,15 +1,13 @@
 import { Router } from 'express';
 import {
-  getNetworkData,
   getAllStations,
   createGame,
   getGameById,
   updateGameResult,
-  saveGameSegment,
   getUserRankings,
   getRandomEvent,
-  getSegmentById,
 } from '../db.js';
+import { getNetwork } from '../dao.js';
 import { validateRoute, calculateMinDistance } from '../utils/validation.js';
 import { isAuthenticated } from '../middleware/auth.js';
 
@@ -48,7 +46,7 @@ const router = Router();
  */
 router.get('/network', async (req, res) => {
   try {
-    const data = await getNetworkData();
+    const data = await getNetwork();
     res.json(data);
   } catch (error) {
     console.error('Error fetching network:', error);
@@ -233,13 +231,6 @@ router.post('/game/play', isAuthenticated, async (req, res) => {
       return res.status(403).json({ error: 'Not authorized to play this game' });
     }
 
-    // --- LÄGG TILL DESSA LOGGAR ---
-    console.log("=== NYTT ANROP TILL /game/play ===");
-    console.log("Hela body:", req.body);
-    console.log("Typ av gameId:", typeof gameId, "- Värde:", gameId);
-    console.log("Typ av segments:", typeof segments, "- Värde:", segments);
-    // ------------------------------
-
     // Validate route
     const validation = await validateRoute(
       game.start_station_id,
@@ -266,14 +257,11 @@ router.post('/game/play', isAuthenticated, async (req, res) => {
 
     for (let i = 0; i < segments.length; i++) {
       const segmentId = segments[i];
-      const segment = await getSegmentById(segmentId);
       const event = await getRandomEvent();
 
       const coinsBefore = currentCoins;
       currentCoins += event.coin_effect;
       currentCoins = Math.max(0, currentCoins); // Coins can't go below 0
-
-      await saveGameSegment(gameId, i, segmentId, event.id, coinsBefore, currentCoins);
 
       events.push({
         segmentId,
