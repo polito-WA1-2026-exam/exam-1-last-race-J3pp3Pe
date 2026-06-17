@@ -100,10 +100,6 @@ router.get('/game/new', isAuthenticated, async (req, res) => {
   try {
     const stations = await getAllStations();
 
-    if (stations.length < 2) {
-      return res.status(500).json({ error: 'Not enough stations in database' });
-    }
-
     let startStation, destinationStation;
     let distance;
 
@@ -214,7 +210,7 @@ router.post('/game/play', isAuthenticated, async (req, res) => {
       segments,
       gameId
     );
-
+    
     if (!validation.valid) {
       // Invalid route = score 0
       await updateGameResult(gameId, segments, false, 0);
@@ -246,7 +242,7 @@ router.post('/game/play', isAuthenticated, async (req, res) => {
         coinsAfter: currentCoins,
       });
     }
-
+    
     const finalScore = Math.max(0, currentCoins);
     await updateGameResult(gameId, segments, true, finalScore);
 
