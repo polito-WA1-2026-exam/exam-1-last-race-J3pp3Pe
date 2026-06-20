@@ -13,7 +13,6 @@ export default function PlanPage() {
   const [game, setGame] = useState(currentGame);
   const [selectedSegments, setSelectedSegments] = useState([]);
   const [timeLeft, setTimeLeft] = useState(90);
-  const [allSegments, setAllSegments] = useState([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -21,21 +20,17 @@ export default function PlanPage() {
       if (!network) {
         await loadNetwork();
       }
-    if (game) { 
-      resetCurrentGame();
-    }
+      if (game) {
+        resetCurrentGame();
+      }
 
-    const newGame = await startGame();
-    setGame(newGame);
+      const newGame = await startGame();
+      setGame(newGame);
     };
     initGame();
   }, []);
 
-  useEffect(() => {
-    if (network?.segments) {
-      setAllSegments(network.segments);
-    }
-  }, [network]);
+  const allSegments = network?.segments ?? [];
 
   // Timer effect
   useEffect(() => {
@@ -140,6 +135,11 @@ export default function PlanPage() {
                   <small>
                     {seg.station_a_name} ↔ {seg.station_b_name}
                   </small>
+                  {selectedSegments.includes(seg.id) && (
+                    <span className="badge bg-light text-dark border float-end">
+                      #{selectedSegments.indexOf(seg.id) + 1}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
