@@ -17,6 +17,10 @@ export default function SetupPage() {
     navigate('/plan');
   };
 
+  const handleInstructions = () => {
+    navigate('/instructions');
+  };
+
   if (loading) {
     return (
       <div className="text-center py-5">
@@ -48,10 +52,18 @@ export default function SetupPage() {
       {network && <NetworkVisualization network={network} />}
 
       <div className="row mt-5">
-        <div className="col-12 text-center">
+        <div className="col-12 text-center d-flex justify-content-center gap-3 flex-wrap">
+          <button
+            className="btn btn-outline-secondary btn-lg"
+            onClick={handleInstructions}
+            type="button"
+          >
+            View Instructions
+          </button>
           <button
             className="btn btn-primary btn-lg"
             onClick={handleStart}
+            type="button"
           >
             Start Game
           </button>
