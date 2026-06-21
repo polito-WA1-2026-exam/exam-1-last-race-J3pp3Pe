@@ -20,7 +20,6 @@ const router = Router();
  *     summary: Get metro network data
  *     description: Returns all lines, stations, and segments forming the metro network
  *     tags: [Network]
- *     security: []
  *     responses:
  *       200:
  *         description: Metro network data
@@ -44,7 +43,7 @@ const router = Router();
  *       500:
  *         description: Failed to fetch network data
  */
-router.get('/network', async (req, res) => {
+router.get('/network', isAuthenticated, async (req, res) => {
   try {
     const data = await getNetwork();
     res.json(data);

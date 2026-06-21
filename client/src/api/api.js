@@ -4,7 +4,9 @@ const API_BASE = 'http://localhost:3001/api';
 
 export async function getNetwork() {
   try {
-    const response = await fetch(`${API_BASE}/network`);
+    const response = await fetch(`${API_BASE}/network`, {
+      credentials: 'include',
+    });
     if (!response.ok) throw new Error(`HTTP error ${response.status}`);
     return await response.json();
   } catch (error) {
