@@ -35,7 +35,6 @@ export class Game {
     this.destinationStation = destinationStation;
     this.initialCoins = initialCoins;
     this.timeLimit = timeLimit;
-    this.coins = initialCoins;
   }
 }
 
