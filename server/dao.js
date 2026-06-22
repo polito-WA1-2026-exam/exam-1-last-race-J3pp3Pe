@@ -87,11 +87,3 @@ export async function getAdjacentStations(stationId) {
     [stationId, stationId, stationId]
   );
 }
-
-export async function getSegmentConnections(stationId) {
-  return promiseDb(
-    `SELECT DISTINCT seg.line_id FROM segments seg
-     WHERE seg.station_a_id = ? OR seg.station_b_id = ?`,
-    [stationId, stationId]
-  );
-}
