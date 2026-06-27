@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState, useRef } from 'react'; // Lägg till useRef
+import React, { useContext, useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import GameContext from '../contexts/GameContext.jsx';
 
@@ -12,12 +12,10 @@ export default function ExecutePage() {
   const [error, setError] = useState('');
   const [currentEventIndex, setCurrentEventIndex] = useState(-1);
   
-  // NYTT: En ref för att spåra om vi redan har anropat API:et
   const hasExecuted = useRef(false);
 
   useEffect(() => {
     const executeGame = async () => {
-      // NYTT: Avbryt direkt om vi redan har kört funktionen
       if (hasExecuted.current) return;
       hasExecuted.current = true;
 

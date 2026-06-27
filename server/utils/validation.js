@@ -5,16 +5,16 @@ export async function validateRoute(startStationId, destinationStationId, segmen
     return { valid: false, reason: 'Route is empty' };
   }
 
-  // 1. Kolla dubbletter direkt (krav: "must not involve any segment more than once")
+  // 1. Check duplicate segments
   if (new Set(segmentIds).size !== segmentIds.length) {
     return { valid: false, reason: 'Cannot use same segment twice' };
   }
 
-  // 2. Hämta alla segment och gör en Map (mycket kortare syntax)
+  // 2. Fetch all segments and create a Map (much shorter syntax)
   const segmentsDb = await dao.getAllSegments();
   const allSegments = new Map(segmentsDb.map(seg => [seg.id, seg]));
 
-  // 3. Spåra rutten steg för steg från startstationen
+  // 3. Trace the route step by step from the start station
   const routeStations = [startStationId];
   let currentStation = startStationId;
 
